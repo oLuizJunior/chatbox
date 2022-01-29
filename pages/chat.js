@@ -1,33 +1,47 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import React from 'react';
 import appConfig from '../config.json';
+import { createClient } from '@supabase/supabase-js'
+
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzQxNDc3MCwiZXhwIjoxOTU4OTkwNzcwfQ.182peEtJY92wjbTlCS4FBYPtFg0W-H1efoQLIiSJ8-c'
+const SUPABASE_URL = 'https://exeddsgfhxkcgqqvdhhf.supabase.co'
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function ChatPage() {
     const [mensagem, setMensagem] = React.useState('');
     const [listaDeMensagens, setListaDeMensagens] = React.useState([]);
 
-    /*
-    // Usuário
-    - Usuário digita no campo textarea
-    - Aperta enter para enviar
-    - Tem que adicionar o texto na listagem
-    
-    // Dev
-    - [X] Campo criado
-    - [X] Vamos usar o onChange usa o useState (ter if pra caso seja enter pra limpar a variavel)
-    - [X] Lista de mensagens 
-    */
+    React.useEffect(() => {
+      supabaseClient
+        .from('mensagens')
+        .select('*')
+        .order('id', {ascending: false})
+        .then(({ data, }) => {
+        console.log('Dados da consulta: ', data);
+        setListaDeMensagens(data);
+    });
+    }, []);
+
     function handleNovaMensagem(novaMensagem) {
         const mensagem = {
-            id: listaDeMensagens.length + 1,
+            //id: listaDeMensagens.length + 1, -> pegar o Id que vem do Supabase
             de: 'vanessametonini',
             texto: novaMensagem,
         };
 
-        setListaDeMensagens([
-            mensagem,
-            ...listaDeMensagens,
-        ]);
+        supabaseClient
+          .from('mensagens')
+          .insert([
+            mensagem
+          ])
+          .then(({ data }) => {
+            console.log('O que está vindo de resposta: ', data)
+            setListaDeMensagens([
+                data[0],
+                ...listaDeMensagens,
+            ]);
+          })
+
         setMensagem('');
     }
 
@@ -43,7 +57,7 @@ export default function ChatPage() {
         >
             <Box
                 styleSheet={{
-                    display: 'flex',
+                    display: "flex",
                     flexDirection: 'column',
                     flex: 1,
                     boxShadow: '0 2px 10px 0 rgb(0 0 0 / 20%)',
@@ -98,6 +112,8 @@ export default function ChatPage() {
                             placeholder="Insira sua mensagem aqui..."
                             type="textarea"
                             styleSheet={{
+                                marginBotton: "8px",
+                                display: "flex",
                                 width: '100%',
                                 border: '0',
                                 resize: 'none',
@@ -139,8 +155,9 @@ function MessageList(props) {
         <Box
             tag="ul"
             styleSheet={{
-                overflow: 'scroll',
+                overflow: 'auto',
                 display: 'flex',
+                marginBottom: '8px',
                 flexDirection: 'column-reverse',
                 flex: 1,
                 color: appConfig.theme.colors.neutrals["000"],
@@ -164,6 +181,8 @@ function MessageList(props) {
                         <Box
                             styleSheet={{
                                 marginBottom: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
                             }}
                         >
                             <Image
@@ -171,16 +190,17 @@ function MessageList(props) {
                                     width: '20px',
                                     height: '20px',
                                     borderRadius: '50%',
-                                    display: 'inline-block',
+                                    display: 'flex',
                                     marginRight: '8px',
                                 }}
-                                src={`https://github.com/vanessametonini.png`}
+                                src={`https://github.com/${mensagem.de}.png`}
                             />
                             <Text tag="strong">
                                 {mensagem.de}
                             </Text>
                             <Text
                                 styleSheet={{
+                                    display: 'flex',
                                     fontSize: '10px',
                                     marginLeft: '8px',
                                     color: appConfig.theme.colors.neutrals[300],
